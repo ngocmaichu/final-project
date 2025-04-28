@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 
 type Cocktail = {
   idDrink: string;
@@ -8,43 +8,34 @@ type Cocktail = {
   strDrinkThumb: string;
 };
 
-export default function Search() {
+export default function HomePage() {
   const [allDrinks, setAllDrinks] = useState<Cocktail[]>([]);
   const [filteredDrinks, setFilteredDrinks] = useState<Cocktail[]>([]);
   const [query, setQuery] = useState("");
-  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     (async () => {
-      const cocktail = await fetch(
+      const response = await fetch(
         "https://www.thecocktaildb.com/api/json/v1/1/search.php?s="
-      ).then((r) => r.json());
-      const big = Array.from({ length: 500 }).flatMap(() => cocktail);
-      setAll(cocktail);
-      setFiltered(cocktail);
+      );
+      const data = await response.json();
+      const drinks: Cocktail[] = data.drinks || [];
+
+      const bigDrinks = Array.from({ length: 500 }, () => drinks).flat();
+      setAllDrinks(bigDrinks);
+      setFilteredDrinks(bigDrinks);
     })();
   }, []);
 
-  function handleChange(
-    ev: React.ChangeEvent<HTMLInputElement>,
-    useTrans: boolean
-  ) {
+  function handleChange(ev: React.ChangeEvent<HTMLInputElement>) {
     const nextQuery = ev.target.value;
     setQuery(nextQuery);
 
-    const doFilter = () => {
-      setFilteredDrinks(
-        allDrinks.filter((drink) =>
-          drink.strDrink.toLowerCase().includes(nextQuery.toLowerCase())
-        )
-      );
-    };
-
-    if (useTrans) {
-      startTransition(doFilter);
-    } else {
-      doFilter();
-    }
+    setFilteredDrinks(
+      allDrinks.filter((drink) =>
+        drink.strDrink.toLowerCase().includes(nextQuery.toLowerCase())
+      )
+    );
   }
 
   const listItems = filteredDrinks.slice(0, 20).map((drink) => (
@@ -59,45 +50,22 @@ export default function Search() {
   ));
 
   return (
-    <>
     <main className="main">
-      <h1>Filter Cocktails</h1>
+      <h1 className="text-3xl font-bold mb-6">Filter Cocktails</h1>
 
       <div className="section">
-        <h2>Conventional</h2>
         <input
-          className="input"
-          placeholder "Search for a drink…"
+          className="input mb-4"
+          placeholder="Search for a drink…"
           value={query}
-          onChange={(e) => handleChange(e, false)}
+          onChange={handleChange}
         />
-        <p>
+        <p className="mb-2">
           {filteredDrinks.length} / {allDrinks.length}
         </p>
-        <ul className="list">
-          {listItems}
-          {filteredDrinks.length > 20 && <li>…</li>}
-        </ul>
-      </div>
-
-      <div className="section">
-        <h2>useTransition</h2>
-        <input
-          className="input"
-          placeholdder="Search for a drink…"
-          value={query}
-          onChange={(e) => handleChange(e, true)}
-        />
-        {isPending && <p className="spinner">Loading…</p>}
-        <p>
-          {filteredDrinks.length} / {allDrinks.length}
-        </p>
-        <ul className="list">
-          {listItems}
-          {filteredDrinks.length > 20 && <li>…</li>}
-        </ul>
+        <ul className="list">{listItems}</ul>
       </div>
     </main>
-    </>
   );
 }
+
